@@ -21,6 +21,7 @@ class Mobil extends Model
         'seat',
         'description',
         'status',
+        'price',
         'picture_upload',
     ];
 }

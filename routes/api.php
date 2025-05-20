@@ -11,13 +11,15 @@ use App\Http\Controllers\Api\Admin\MobilController;
 use App\Http\Controllers\Api\Admin\TestimoniController;
 use App\Http\Controllers\Api\Web\AboutUsController;
 use App\Http\Controllers\Api\Web\LandingPageController;
+use App\Http\Controllers\Api\Web\ListMobilController;
 
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/home', [LandingPageController::class, 'index']);
 Route::get('/about-us', [AboutUsController::class, 'index']);
+Route::get('/list-mobil', [ListMobilController::class, 'index']);
+Route::post('/write-feedback', [TestimoniController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

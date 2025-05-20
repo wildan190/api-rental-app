@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Mobil;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class MobilController extends Controller
@@ -12,7 +13,7 @@ class MobilController extends Controller
     // Tampilkan semua data mobil
     public function index()
     {
-        $mobils = Mobil::all();
+        $mobils = Mobil::paginate(5);
         return response()->json([
             'message' => 'List of all cars',
             'data' => $mobils
@@ -32,8 +33,15 @@ class MobilController extends Controller
             'seat' => 'required|integer|min:1',
             'description' => 'nullable|string',
             'status' => ['required', Rule::in(['Available', 'Disewa', 'Out Of Order'])],
-            'picture_upload' => 'nullable|string', // bisa kamu ganti sesuai kebutuhan upload file
+            'price' => 'required|numeric|min:0',
+            'picture_upload' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
+
+        // Upload file gambar jika ada
+        if ($request->hasFile('picture_upload')) {
+            $path = $request->file('picture_upload')->store('mobil_pictures', 'public');
+            $validated['picture_upload'] = 'storage/' . $path;
+        }
 
         $mobil = Mobil::create($validated);
 
@@ -72,7 +80,7 @@ class MobilController extends Controller
         }
 
         $validated = $request->validate([
-            'plat_number' => ['sometimes', 'string', Rule::unique('mobils')->ignore($mobil->id)],
+            'plat_number' => ['nullable', 'string', Rule::unique('mobils')->ignore($mobil->id)],
             'category' => ['sometimes', Rule::in(['MPV', 'SUV', 'HATCHBACK', 'CROSSOVER', 'SEDAN', 'COUPE', 'CABRIOLET', 'ROADSTER'])],
             'merk' => 'sometimes|string',
             'model' => 'sometimes|string',
@@ -81,8 +89,23 @@ class MobilController extends Controller
             'seat' => 'sometimes|integer|min:1',
             'description' => 'nullable|string',
             'status' => ['sometimes', Rule::in(['Available', 'Disewa', 'Out Of Order'])],
-            'picture_upload' => 'nullable|string',
+            'price' => 'sometimes|numeric|min:0',
+            'picture_upload' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
+
+        // Upload gambar baru jika ada
+        if ($request->hasFile('picture_upload')) {
+            // Hapus gambar lama jika ada
+            if ($mobil->picture_upload) {
+                $oldPath = str_replace('storage/', 'public/', $mobil->picture_upload);
+                if (Storage::disk('public')->exists(str_replace('public/', '', $oldPath))) {
+                    Storage::disk('public')->delete(str_replace('public/', '', $oldPath));
+                }
+            }
+
+            $path = $request->file('picture_upload')->store('mobil_pictures', 'public');
+            $validated['picture_upload'] = 'storage/' . $path;
+        }
 
         $mobil->update($validated);
 
@@ -101,6 +124,14 @@ class MobilController extends Controller
             return response()->json([
                 'message' => 'Mobil not found'
             ], 404);
+        }
+
+        // Hapus file gambar jika ada
+        if ($mobil->picture_upload) {
+            $oldPath = str_replace('storage/', 'public/', $mobil->picture_upload);
+            if (Storage::disk('public')->exists(str_replace('public/', '', $oldPath))) {
+                Storage::disk('public')->delete(str_replace('public/', '', $oldPath));
+            }
         }
 
         $mobil->delete();
