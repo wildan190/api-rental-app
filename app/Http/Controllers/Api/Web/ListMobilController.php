@@ -45,7 +45,7 @@ class ListMobilController extends Controller
             $query->where('seat', $request->seat);
         }
 
-        $mobils = $query->limit(6)->get();
+        $mobils = Mobil::paginate(10);
 
         return response()->json([
             'mobils' => $mobils,
